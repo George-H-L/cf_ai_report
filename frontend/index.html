@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>The Briefing</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400;1,700&family=Source+Serif+4:ital,opsz,wght@0,8..60,300;0,8..60,400;0,8..60,600;1,8..60,300;1,8..60,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --ink:       #1a1208;
+      --ink-2:     #3d3322;
+      --ink-3:     #7a6e5f;
+      --paper:     #f5f0e8;
+      --paper-2:   #ede7d9;
+      --paper-3:   #e2dace;
+      --accent:    #b5340a;
+      --gold:      #c9922a;
+      --rule:      #c8b99a;
+      --rule-dark: #9e8d72;
+
+      --ff-display: 'Playfair Display', Georgia, serif;
+      --ff-body:    'Source Serif 4', Georgia, serif;
+      --ff-mono:    'JetBrains Mono', monospace;
+    }
+
+    body {
+      background: var(--paper);
+      color: var(--ink);
+      font-family: var(--ff-body);
+      min-height: 100vh;
+    }
+
+    /* Newspaper masthead at the top */
+    .masthead {
+      border-bottom: 3px double var(--rule-dark);
+      padding: 1.5rem 2rem 1rem;
+      text-align: center;
+      background: var(--paper);
+      position: relative;
+    }
+    .masthead::after {
+      content: '';
+      display: block;
+      border-top: 1px solid var(--rule-dark);
+      margin-top: 0.5rem;
+    }
+    .masthead-kicker {
+      font-family: var(--ff-mono);
+      font-size: 0.65rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--ink-3);
+      margin-bottom: 0.4rem;
+    }
+    .masthead-title {
+      font-family: var(--ff-display);
+      font-size: clamp(2.4rem, 6vw, 4rem);
+      font-weight: 900;
+      letter-spacing: -0.02em;
+      line-height: 1;
+      color: var(--ink);
+    }
+    .masthead-subtitle {
+      font-family: var(--ff-body);
+      font-size: 0.78rem;
+      font-style: italic;
+      color: var(--ink-3);
+      margin-top: 0.3rem;
+      letter-spacing: 0.04em;
+    }
+    .dateline {
+      font-family: var(--ff-mono);
+      font-size: 0.62rem;
+      color: var(--ink-3);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      position: absolute;
+      right: 2rem;
+      top: 50%;
+      transform: translateY(-50%);
+      text-align: right;
+      line-height: 1.8;
+    }
+
+    /* Page layout */
+    .page { max-width: 1080px; margin: 0 auto; padding: 0 1.5rem 4rem; }
+
+    .two-col {
+      display: grid;
+      grid-template-columns: 1fr 280px;
+      gap: 2rem;
+      margin-top: 2rem;
+    }
+    @media (max-width: 720px) {
+      .two-col { grid-template-columns: 1fr; }
+      .dateline { display: none; }
+    }
+
+    /* Topic input form */
+    .brief-form {
+      margin-top: 2rem;
+      padding: 1.5rem 1.75rem;
+      border: 1px solid var(--rule);
+      border-top: 3px solid var(--ink);
+      background: var(--paper-2);
+    }
+    .brief-form label {
+      display: block;
+      font-family: var(--ff-mono);
+      font-size: 0.62rem;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--ink-3);
+      margin-bottom: 0.5rem;
+    }
+    .brief-form .input-row { display: flex; gap: 0.75rem; }
+    .brief-form input {
+      flex: 1;
+      padding: 0.65rem 0.9rem;
+      border: 1px solid var(--rule-dark);
+      background: var(--paper);
+      color: var(--ink);
+      font-family: var(--ff-body);
+      font-size: 1rem;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    .brief-form input:focus { border-color: var(--accent); }
+    .brief-form input::placeholder { color: var(--ink-3); font-style: italic; }
+
+    .btn-dispatch {
+      padding: 0.65rem 1.6rem;
+      background: var(--ink);
+      color: var(--paper);
+      border: none;
+      font-family: var(--ff-mono);
+      font-size: 0.7rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: background 0.15s;
+      white-space: nowrap;
+    }
+    .btn-dispatch:hover { background: var(--accent); }
+    .btn-dispatch:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    /* Status bar that shows which pipeline step is running */
+    .ticker {
+      margin-top: 1rem;
+      padding: 0.6rem 0.9rem;
+      background: var(--paper-3);
+      border-left: 3px solid var(--gold);
+      font-family: var(--ff-mono);
+      font-size: 0.7rem;
+      color: var(--ink-2);
+      letter-spacing: 0.04em;
+      display: none;
+    }
+    .ticker.visible { display: block; }
+    .ticker .dot {
+      display: inline-block;
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--gold);
+      margin-right: 6px;
+      animation: pulse 1.2s ease-in-out infinite;
+    }
+    .ticker .dot.done  { background: #3a8a4a; animation: none; }
+    .ticker .dot.error { background: var(--accent); animation: none; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+    /* The briefing itself */
+    #briefing-area { margin-top: 2rem; }
+
+    .briefing-meta {
+      margin-bottom: 0.5rem;
+      font-family: var(--ff-mono);
+      font-size: 0.62rem;
+      color: var(--ink-3);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+    .briefing-headline {
+      font-family: var(--ff-display);
+      font-size: clamp(1.5rem, 3.5vw, 2.2rem);
+      font-weight: 700;
+      line-height: 1.2;
+      color: var(--ink);
+      border-bottom: 2px solid var(--ink);
+      padding-bottom: 0.6rem;
+      margin-bottom: 1.5rem;
+    }
+    .briefing-section {
+      padding: 1.1rem 0;
+      border-bottom: 1px solid var(--rule);
+    }
+    .briefing-section:last-child { border-bottom: none; }
+    .section-header {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 1rem;
+      margin-bottom: 0.5rem;
+    }
+    .section-title {
+      font-family: var(--ff-display);
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: var(--ink);
+    }
+    .section-angle {
+      font-family: var(--ff-mono);
+      font-size: 0.58rem;
+      color: var(--paper);
+      background: var(--ink-3);
+      padding: 2px 7px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+    .section-body {
+      font-size: 0.97rem;
+      line-height: 1.75;
+      color: var(--ink-2);
+    }
+
+    /* Thumbs up/down buttons for rating a briefing */
+    .section-footer {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-top: 0.7rem;
+    }
+    .vote-btn {
+      padding: 3px 10px;
+      border: 1px solid var(--rule-dark);
+      background: none;
+      font-family: var(--ff-mono);
+      font-size: 0.62rem;
+      letter-spacing: 0.08em;
+      color: var(--ink-3);
+      cursor: pointer;
+      transition: all 0.12s;
+    }
+    .vote-btn:hover { border-color: var(--ink); color: var(--ink); }
+    .vote-btn.active-up   { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+    .vote-btn.active-down { background: var(--accent); color: var(--paper); border-color: var(--accent); }
+
+    /* Sources list at the bottom of the briefing */
+    .sources-block {
+      margin-top: 1.5rem;
+      padding-top: 1rem;
+      border-top: 2px double var(--rule-dark);
+    }
+    .sources-heading {
+      font-family: var(--ff-mono);
+      font-size: 0.62rem;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--ink-3);
+      margin-bottom: 0.75rem;
+    }
+    .source-item {
+      display: flex;
+      gap: 0.6rem;
+      margin-bottom: 0.55rem;
+      font-size: 0.82rem;
+      line-height: 1.4;
+    }
+    .source-num { font-family: var(--ff-mono); font-size: 0.65rem; color: var(--accent); min-width: 1.2rem; padding-top: 0.05rem; }
+    .source-item a { color: var(--ink-2); text-decoration: underline; text-underline-offset: 2px; }
+    .source-item a:hover { color: var(--accent); }
+    .source-blurb { color: var(--ink-3); font-style: italic; margin-top: 0.15rem; font-size: 0.78rem; }
+
+    /* Right sidebar: user profile and history */
+    .sidebar-box {
+      border: 1px solid var(--rule);
+      border-top: 2px solid var(--ink-2);
+      padding: 1.1rem;
+      margin-bottom: 1.5rem;
+      background: var(--paper-2);
+    }
+    .sidebar-box h3 {
+      font-family: var(--ff-mono);
+      font-size: 0.62rem;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--ink-3);
+      margin-bottom: 0.8rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 1px solid var(--rule);
+    }
+    .interest-pill {
+      display: inline-block;
+      margin: 0.2rem;
+      padding: 2px 8px;
+      border: 1px solid var(--rule-dark);
+      font-family: var(--ff-mono);
+      font-size: 0.6rem;
+      color: var(--ink-2);
+      letter-spacing: 0.06em;
+    }
+    .interest-pill.liked    { border-color: #3a8a4a; color: #3a8a4a; }
+    .interest-pill.disliked { border-color: var(--accent); color: var(--accent); }
+    .history-item {
+      display: flex;
+      flex-direction: column;
+      gap: 0.15rem;
+      padding: 0.55rem 0;
+      border-bottom: 1px dotted var(--rule);
+      cursor: pointer;
+    }
+    .history-item:last-child { border-bottom: none; }
+    .history-item:hover .history-topic { color: var(--accent); }
+    .history-topic { font-family: var(--ff-display); font-style: italic; font-size: 0.88rem; color: var(--ink); transition: color 0.12s; }
+    .history-date  { font-family: var(--ff-mono); font-size: 0.58rem; color: var(--ink-3); letter-spacing: 0.06em; }
+    .pref-note     { font-size: 0.82rem; line-height: 1.55; color: var(--ink-2); font-style: italic; }
+    .empty         { font-family: var(--ff-body); font-style: italic; font-size: 0.85rem; color: var(--ink-3); text-align: center; padding: 1.5rem 0; }
+  </style>
+</head>
+<body>
+
+<header class="masthead">
+  <p class="masthead-kicker">AI-Powered Intelligence Service</p>
+  <h1 class="masthead-title">The Briefing</h1>
+  <p class="masthead-subtitle">Research dispatched by machine, curated for you</p>
+  <div class="dateline" id="dateline-box"></div>
+</header>
+
+<main class="page">
+  <div class="two-col">
+
+    <div>
+      <section class="brief-form">
+        <label for="topic-input">Request a briefing on</label>
+        <div class="input-row">
+          <input
+            id="topic-input"
+            type="text"
+            placeholder="e.g. quantum computing breakthroughs, EU AI Act, fusion energy..."
+            autocomplete="off"
+          />
+          <button class="btn-dispatch" id="dispatch-btn">Dispatch</button>
+        </div>
+      </section>
+
+      <!-- Shows what the pipeline is currently doing while we wait -->
+      <div class="ticker" id="ticker">
+        <span class="dot" id="ticker-dot"></span>
+        <span id="ticker-msg">Initialising research pipeline...</span>
+      </div>
+
+      <section id="briefing-area"></section>
+    </div>
+
+    <aside>
+      <div class="sidebar-box">
+        <h3>Your Profile</h3>
+        <div id="pref-notes-box"><p class="pref-note">No briefings rated yet.</p></div>
+        <div style="margin-top:0.8rem" id="interests-box"></div>
+      </div>
+
+      <div class="sidebar-box">
+        <h3>Past Briefings</h3>
+        <div id="history-box"><p class="empty">None yet.</p></div>
+      </div>
+    </aside>
+
+  </div>
+</main>
+
+<script>
+  // Change this to your deployed Worker URL after wrangler deploy.
+  // In dev mode it runs at localhost:8787.
+  const API = 'http://localhost:8787';
+
+  // Generate a random user ID and persist it in localStorage so the
+  // same user gets the same profile across sessions.
+  const userId = localStorage.getItem('briefing_uid') ?? (() => {
+    const id = 'user_' + Math.random().toString(36).slice(2, 10);
+    localStorage.setItem('briefing_uid', id);
+    return id;
+  })();
+
+  // Dateline in the top right of the masthead
+  const dl = document.getElementById('dateline-box');
+  const now = new Date();
+  dl.innerHTML = `
+    ${now.toLocaleDateString('en-GB', { weekday: 'long' })}<br>
+    ${now.toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' })}<br>
+    <span style="color:var(--accent);font-weight:500">ID: ${userId.slice(-6).toUpperCase()}</span>
+  `;
+
+  const topicInput   = document.getElementById('topic-input');
+  const dispatchBtn  = document.getElementById('dispatch-btn');
+  const ticker       = document.getElementById('ticker');
+  const tickerDot    = document.getElementById('ticker-dot');
+  const tickerMsg    = document.getElementById('ticker-msg');
+  const briefingArea = document.getElementById('briefing-area');
+  const historyBox   = document.getElementById('history-box');
+  const interestsBox = document.getElementById('interests-box');
+  const prefNotes    = document.getElementById('pref-notes-box');
+
+  let pollTimer = null;
+  let cachedPrefs = { notes: '', interests: [], avoidTopics: [] };
+
+  dispatchBtn.addEventListener('click', async () => {
+    const topic = topicInput.value.trim();
+    if (!topic) return;
+
+    dispatchBtn.disabled = true;
+    topicInput.disabled = true;
+    briefingArea.innerHTML = '';
+    setTicker(false, 'Dispatching research request...');
+    await loadSidebar(); // await so cachedPrefs is always fresh before we POST
+
+    try {
+      const res = await fetch(`${API}/briefing`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          topic,
+          userId,
+          preferenceNotes: cachedPrefs.notes,
+          interests: cachedPrefs.interests,
+          avoidTopics: cachedPrefs.avoidTopics,
+        }),
+      });
+      const data = await res.json();
+      if (!data.briefingId) throw new Error(data.error ?? 'Unknown error');
+      pollForResult(data.briefingId);
+    } catch (e) {
+      setTicker(true, `Error: ${e.message}`, 'error');
+      dispatchBtn.disabled = false;
+      topicInput.disabled = false;
+    }
+  });
+
+  topicInput.addEventListener('keydown', e => {
+    if (e.key === 'Enter') dispatchBtn.click();
+  });
+
+  // The pipeline steps we cycle through while waiting
+  const STEPS = [
+    'Searching web...',
+    'Fetching sources...',
+    'Summarising sources...',
+    'Composing briefing...',
+  ];
+  let stepIdx = 0;
+
+  function pollForResult(briefingId) {
+    stepIdx = 0;
+    pollTimer = setInterval(async () => {
+      try {
+        const res  = await fetch(`${API}/briefing/${briefingId}`);
+        const data = await res.json();
+
+        if (data.status === 'processing') {
+          setTicker(false, STEPS[stepIdx % STEPS.length]);
+          stepIdx++;
+        } else if (data.status === 'pending') {   // ADD THIS
+          setTicker(false, 'Waiting for pipeline to start...');  // ADD THIS
+        } else if (data.status === 'complete') {
+          clearInterval(pollTimer);
+          setTicker(true, 'Briefing ready.', 'done');
+          renderBriefing(data);
+          resetForm();
+          loadSidebar();
+        } else if (data.status === 'error') {
+          clearInterval(pollTimer);
+          setTicker(true, data.errorMsg ?? 'Research pipeline failed.', 'error');
+          resetForm();
+        }
+      } catch {
+        // network hiccup, keep polling
+      }
+    }, 3000);
+  }
+
+  function renderBriefing(data, existingRating = null) {
+    const date = new Date(data.createdAt).toLocaleDateString('en-GB', {
+      day: '2-digit', month: 'long', year: 'numeric',
+      hour: '2-digit', minute: '2-digit',
+    });
+
+    const sectionsHtml = (data.sections ?? []).map(s => `
+      <div class="briefing-section">
+        <div class="section-header">
+          <h3 class="section-title">${esc(s.title)}</h3>
+          <span class="section-angle">${esc(s.angle)}</span>
+        </div>
+        <p class="section-body">${esc(s.body)}</p>
+      </div>
+    `).join('');
+
+    const sourcesHtml = (data.sources ?? []).map((s, i) => `
+      <div class="source-item">
+        <span class="source-num">[${i + 1}]</span>
+        <div>
+          <a href="${esc(s.url)}" target="_blank" rel="noopener">${esc(s.title)}</a>
+          <p class="source-blurb">${esc(s.blurb)}</p>
+        </div>
+      </div>
+    `).join('');
+
+    briefingArea.innerHTML = `
+      <p class="briefing-meta">${esc(date)} - Topic: ${esc(data.topic)}</p>
+      <h2 class="briefing-headline">${esc(data.headline)}</h2>
+      <div class="section-footer" style="margin-bottom:1rem">
+        <button class="vote-btn" data-rating="up"   data-id="${data.briefingId}">Up — Useful</button>
+        <button class="vote-btn" data-rating="down" data-id="${data.briefingId}">Down — Not relevant</button>
+      </div>
+      <div>${sectionsHtml}</div>
+      <div class="sources-block">
+        <p class="sources-heading">Sources consulted</p>
+        ${sourcesHtml || '<p class="empty">No sources recorded.</p>'}
+      </div>
+    `;
+
+    briefingArea.querySelectorAll('.vote-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const rating = btn.dataset.rating;
+        const activeClass = rating === 'up' ? 'active-up' : 'active-down';
+        const alreadyActive = btn.classList.contains(activeClass);
+
+        briefingArea.querySelectorAll('.vote-btn').forEach(b => {
+          b.classList.remove('active-up', 'active-down');
+        });
+
+        if (!alreadyActive) {
+          btn.classList.add(activeClass);
+          submitFeedback(data.briefingId, data.topic, rating);
+        }
+      });
+    });
+
+    if (existingRating) {
+      const activeBtn = briefingArea.querySelector(`.vote-btn[data-rating="${existingRating}"]`);
+      if (activeBtn) activeBtn.classList.add(existingRating === 'up' ? 'active-up' : 'active-down');
+    }
+  }
+
+  async function submitFeedback(briefingId, topic, rating) {
+    try {
+      await fetch(`${API}/feedback`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ briefingId, userId, topic, rating }),
+      });
+      loadSidebar();
+    } catch { /* silent */ }
+  }
+
+  async function loadSidebar() {
+    try {
+      const res     = await fetch(`${API}/profile/${userId}`);
+      const profile = await res.json();
+
+      cachedPrefs = {
+        notes: profile.preferenceNotes ?? '',
+        interests: profile.interests ?? [],
+        avoidTopics: profile.avoidTopics ?? [],
+      };
+
+      prefNotes.innerHTML = profile.preferenceNotes && profile.preferenceNotes !== 'No preferences recorded yet.'
+        ? `<p class="pref-note">${esc(profile.preferenceNotes)}</p>`
+        : `<p class="pref-note">Rate a few briefings and I will learn what you care about.</p>`;
+
+      const pills = [
+        ...(profile.interests   ?? []).slice(0, 8).map(t => `<span class="interest-pill liked">${esc(t)}</span>`),
+        ...(profile.avoidTopics ?? []).slice(0, 5).map(t => `<span class="interest-pill disliked">${esc(t)}</span>`),
+      ];
+      interestsBox.innerHTML = pills.join('');
+
+      const history = profile.briefingHistory ?? [];
+      historyBox.innerHTML = history.length === 0
+        ? '<p class="empty">None yet.</p>'
+        : history.slice(0, 10).map(h => `
+            <div class="history-item" data-id="${h.briefingId}" data-rating="${h.rating ?? ''}">
+              <span class="history-topic">${esc(h.topic)}</span>
+              <span class="history-date">
+                ${new Date(h.date).toLocaleDateString('en-GB')}
+                ${h.rating === 'up' ? ' · ↑' : h.rating === 'down' ? ' · ↓' : ''}
+              </span>
+            </div>
+          `).join('');
+
+      // Click a history item to reload that briefing
+      historyBox.querySelectorAll('.history-item').forEach(item => {
+        item.addEventListener('click', async () => {
+          const id = item.dataset.id;
+          if (!id) return;
+          try {
+            const r = await fetch(`${API}/briefing/${id}`);
+            const b = await r.json();
+            if (b.status === 'complete') {
+              briefingArea.innerHTML = '';
+              renderBriefing(b, item.dataset.rating || null);
+              ticker.classList.remove('visible');
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+          } catch { /* silent */ }
+        });
+      });
+
+    } catch { /* silent */ }
+  }
+
+  function setTicker(done, msg, type = '') {
+    ticker.classList.add('visible');
+    tickerMsg.textContent = msg;
+    tickerDot.className = 'dot' + (done ? ' ' + type : '');
+  }
+
+  function resetForm() {
+    dispatchBtn.disabled = false;
+    topicInput.disabled  = false;
+    topicInput.value     = '';
+  }
+
+  // Simple HTML escaping to avoid XSS when rendering LLM output
+  function esc(str) {
+    if (typeof str !== 'string') return '';
+    return str
+      .replace(/&/g,  '&amp;')
+      .replace(/</g,  '&lt;')
+      .replace(/>/g,  '&gt;')
+      .replace(/"/g,  '&quot;')
+      .replace(/'/g,  '&#039;');
+  }
+
+  loadSidebar();
+  topicInput.focus();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,32 @@
+name               = "cf-ai-research-briefing"
+main               = "src/index.ts"
+compatibility_date = "2024-11-01"
+compatibility_flags = ["nodejs_compat"]
+
+# Workers AI gives us env.AI to run Llama 3.3
+[ai]
+binding = "AI"
+
+# KV stores completed briefings so the frontend can poll for results
+[[kv_namespaces]]
+binding    = "BRIEFINGS"
+id         = "935de9477e454e0a9b33c9943e0c1382"
+preview_id = "935de9477e454e0a9b33c9943e0c1382"
+
+# One Durable Object instance per user, holds their preference profile
+[[durable_objects.bindings]]
+name       = "USER_PROFILE"
+class_name = "UserProfileDO"
+
+# Required the first time you deploy a new DO class
+[[migrations]]
+tag             = "v1"
+new_sqlite_classes = ["UserProfileDO"]
+
+# The research pipeline runs as a Workflow so each step gets checkpointed
+[[workflows]]
+name       = "research-workflow"
+binding    = "RESEARCH_WORKFLOW"
+class_name = "ResearchWorkflow"
+
+# No API keys needed, search uses free DuckDuckGo HTML scraping
