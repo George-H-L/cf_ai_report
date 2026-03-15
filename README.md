@@ -22,8 +22,15 @@ The frontend polls for the result every 3 seconds and renders it when done.
 npm install
 npx wrangler login
 
-# Create the KV namespace, then paste the two IDs it gives you into wrangler.toml
-npm run kv:create
+# Create the KV namespace
+npx wrangler kv namespace create BRIEFINGS
+npx wrangler kv namespace create BRIEFINGS --preview
+
+# Paste both IDs into wrangler.toml — use the same ID for both id and preview_id
+[[kv_namespaces]]
+binding    = "BRIEFINGS"
+id         = "your-id-here"
+preview_id = "your-id-here"
 
 npm run dev
 # Worker runs at http://localhost:8787
